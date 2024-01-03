@@ -1,0 +1,92 @@
+#!/bin/bash
+
+#This script creates a vm using virt-install and install the necessary dependencies.
+#Tested from start to finish on GCE VM running Ubuntu 23.04 as a host. Different Host and Client configurations may result in errors.
+#The entire user input should be done in the Variables part of this script for proper behavior but modify as you wish.
+
+
+#====Variables====#
+
+#Example configuration. Modify as needed
+VM_NAME=test-vm-vm
+MEMORY=3072
+VCPUS=2
+DISK_SIZE=5
+VM_DIRECTORY=$HOME/vms
+
+# Debian alternative
+ISO_FILE=http://deb.debian.org/debian/dists/bullseye/main/installer-amd64/
+OS_NAME=debian11
+
+#====/Variables====#
+
+#====Requirements====#
+
+sudo apt install --no-install-recommends qemu-system libvirt-clients libvirt-daemon-system -y
+sudo apt install ovmf qemu-utils virtinst dnsmasq -y
+
+GROUP=libvirt
+
+if id -nG "$USER" | grep -qw "$GROUP"; then
+    echo $USER belongs to $GROUP, skipping.
+else
+    sudo adduser $USER libvirt
+fi
+
+if [ `systemctl is-enabled libvirtd` ==  enabled ]; then
+        echo Libvirtd enabled, skipping.
+else
+        sudo systemctl enable libvirtd
+        sudo systemctl start libvirtd
+fi
+
+if sudo virsh net-list | grep -q 'active'; then
+        echo Default network active, skipping.    
+else
+        sudo virsh --connect=qemu:///system net-autostart default
+        sudo virsh --connect=qemu:///system net-start default
+fi
+
+
+setfacl -m user:libvirt-qemu:--x $HOME
+
+if [ -d ${VM_DIRECTORY} ]; then
+        setfacl -m user:libvirt-qemu:--x $HOME/vms
+else
+        mkdir ${VM_DIRECTORY}
+        setfacl -m user:libvirt-qemu:--x $HOME/vms
+fi
+
+#====/Requirements====#
+
+sudo virt-install \
+        --virt-type qemu \
+        --name ${VM_NAME} \
+        --location ${ISO_FILE} \
+        --os-variant ${OS_NAME} \
+        --disk ${VM_DIRECTORY}/${VM_NAME}.qcow2,size=${DISK_SIZE} \
+        --memory ${MEMORY} \
+        --graphics none \
+        --console pty,target_type=serial \
+        --extra-args "console=ttyS0" \
+        --boot uefi \
+        --vcpus ${VCPUS} #\
+#       --cpu host-passthrough,cache.mode=passthrough
+
+#====Garbage====#
+
+# Ubuntu, Manjaro and Fedora urls are not yet tested properly. Do not use
+
+# Ubuntu alternatives
+#ISO_FILE="https://releases.ubuntu.com/23.04/ubuntu-23.04-live-server-amd64.iso"
+#OS_NAME="ubuntu23.04"
+
+# Manjaro alternative
+#ISO_FILE=http://manjaro.org/manjaro/rolling
+#OS_NAME=manjaro
+
+# Fedora alternative
+#ISO_FILE=http://fedoraproject.org/fedora/38
+#OS_NAME=fedora38
+
+#====/Garbage====#
