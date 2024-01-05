@@ -2,6 +2,15 @@
 
 . $PWD/machine-config.sh
 
+if [ ! -d ${VM_DIRECTORY} ]; then
+    mkdir ${VM_DIRECTORY}
+fi
+
+if [ ! -d ${ISO_DIRECTORY} ]; then
+    mkdir ${ISO_DIRECTORY}
+    chmod 777 ${ISO_DIRECTORY}
+fi
+
 sudo apt install --no-install-recommends qemu-system libvirt-clients libvirt-daemon-system -y
 sudo apt install ovmf qemu-utils virtinst dnsmasq -y
 

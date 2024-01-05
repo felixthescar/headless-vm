@@ -40,13 +40,4 @@ if [ -z "$ISO_DIRECTORY" ]; then
     ISO_DIRECTORY=$HOME/iso-files
 fi
 
-if [ ! -d ${VM_DIRECTORY} ]; then
-    mkdir ${VM_DIRECTORY}
-fi
-
-if [ ! -d ${ISO_DIRECTORY} ]; then
-    mkdir ${ISO_DIRECTORY}
-    chmod 777 ${ISO_DIRECTORY}
-fi
-
 ISO=$ISO_DIRECTORY/$OS_NAME
